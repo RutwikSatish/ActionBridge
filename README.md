@@ -49,29 +49,6 @@ streamlit run app.py
 
 ---
 
-## LinkedIn Post
-
-```
-project44 CEO Jett McCandless said:
-"AI that doesn't lead to action is just another dashboard."
-
-So I mapped exactly what happens after a shipment alert fires.
-230 minutes. 10 manual steps. 4-5 people.
-
-Then I built ActionBridge to do it in 3 minutes.
-
-→ Impact analyser: which SAP orders are at risk
-→ Decision engine: ranked responses with net benefit ($)
-→ SAP drafts: VA02, ME22N, LT01 auto-generated
-→ Data quality: 4-dataset validation before any decision
-
-[Streamlit link]
-
-@project44 #LogisticsTech #SupplyChain #AIOperations #SAP
-```
-
----
-
 ## By
 **Rutwik Satish** | MS Engineering Management, Northeastern (May 2026)
 Celonis Process Mining Certified · SAP S/4HANA · McKinsey Forward
