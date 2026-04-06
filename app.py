@@ -1043,39 +1043,6 @@ with tab8:
             </div>
             """, unsafe_allow_html=True)
 
-    # ── Target Companies & CTA ────────────────────────────────────────────────
-    st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown('<p class="ab-label">Companies to Approach With This</p>', unsafe_allow_html=True)
-
-    companies = [
-        ("project44", "Chicago, IL", "Founder/CEO: Jett McCandless",
-         "Built this project directly from his public quote. Hiring Implementation Consultants and Supply Chain Solutions Analysts.",
-         "#F59E0B"),
-        ("GEP Worldwide", "Clark, NJ", "VP: Wayne Clark",
-         "SAP-integrated procurement consulting. Actively hiring new grad analysts. Strong H-1B sponsor.",
-         "#3B82F6"),
-        ("Blue Yonder", "Dallas, TX", "CEO: Duncan Angove",
-         "Supply chain AI platform — SADA Loop mirrors ActionBridge's See/Analyze/Decide/Act structure.",
-         "#8B5CF6"),
-        ("Celonis", "New York, NY", "Co-CEO: Alex Rinke",
-         "Process mining platform this app's methodology is based on. Hiring Customer Success and Implementation roles.",
-         "#10B981"),
-    ]
-
-    co1, co2 = st.columns(2)
-    for i, (company, location, contact, desc, color) in enumerate(companies):
-        with (co1 if i % 2 == 0 else co2):
-            st.markdown(f"""
-            <div style='background:#111827; border:1px solid {color}33;
-                        border-top:2px solid {color}; border-radius:9px;
-                        padding:14px 16px; margin-bottom:10px;'>
-                <div style='font-size:14px; font-weight:700; color:#F9FAFB;'>{company}</div>
-                <div style='font-size:10px; color:{color}; font-family:Space Mono;
-                            margin:3px 0;'>{location} · {contact}</div>
-                <div style='font-size:11px; color:#9CA3AF; line-height:1.5; margin-top:6px;'>{desc}</div>
-            </div>
-            """, unsafe_allow_html=True)
-
     # Final attribution
     st.markdown("<br>", unsafe_allow_html=True)
     st.markdown("""
