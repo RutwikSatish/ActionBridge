@@ -273,13 +273,15 @@ st.markdown("<br>", unsafe_allow_html=True)
 # ══════════════════════════════════════════════════════════════════════════════
 # TABS
 # ══════════════════════════════════════════════════════════════════════════════
-tab1,tab2,tab3,tab4,tab5,tab6 = st.tabs([
+tab1,tab2,tab3,tab4,tab5,tab6,tab7,tab8 = st.tabs([
     "🚨  Disruption Feed",
     "🔍  Impact Analyser",
     "🧠  Decision Engine",
     "⚙️  SAP Actions",
     "✅  Proof of Value",
     "🗂️  Data Quality",
+    "📋  Data Preview",
+    "ℹ️  About & Problem",
 ])
 
 
@@ -716,6 +718,379 @@ with tab6:
             MS Engineering Management, Northeastern University ·
             <span style='color:#F59E0B;'>Celonis Process Mining Certified</span> ·
             SAP S/4HANA · McKinsey Forward · May 2026
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# TAB 7 — Data Preview
+# ─────────────────────────────────────────────────────────────────────────────
+with tab7:
+    st.markdown('<p class="ab-label">Data Preview — All Datasets</p>', unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="ab-card-amber">
+        <div class="ab-label">What You're Looking At</div>
+        <div style='font-size:12px; color:#F9FAFB; line-height:1.8;'>
+            ActionBridge works with <b>4 interconnected datasets</b> — Shipments (project44 events),
+            Orders (SAP sales orders), Inventory (SAP MM stock levels), and Carriers (reliability profiles).
+            Together these datasets power every decision the engine makes.
+            Download any dataset to explore it in Excel or import it into Celonis.
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    dataset_choice = st.selectbox(
+        "Select dataset to preview",
+        ["Shipments (project44 events)", "Orders (SAP SO)", "Inventory (SAP MM)", "Carriers"],
+    )
+
+    if "Shipments" in dataset_choice:
+        df_show   = shipments.copy()
+        col_info  = {
+            "shipment_id":       "Unique shipment identifier (maps to project44 tracking ID)",
+            "carrier":           "Carrier name — links to Carriers dataset for reliability profile",
+            "origin_warehouse":  "Source warehouse (SAP plant / storage location)",
+            "destination_state": "Delivery state",
+            "ship_date":         "Date goods left origin warehouse",
+            "expected_delivery": "Original ETA from carrier",
+            "actual_delivery":   "Actual / projected delivery including delay",
+            "delay_hours":       "Hours of delay detected (0 = on-time)",
+            "disruption_type":   "Root cause category of delay (from project44 exception event)",
+            "is_delayed":        "Boolean flag — True if delay_hours > 0",
+            "severity":          "Severity grade: Critical ≥48h, High ≥24h, Medium ≥12h",
+            "freight_cost_usd":  "Base freight cost before any expedite premium",
+        }
+        ctrl1, ctrl2, ctrl3 = st.columns([1.2, 1.2, 1.2])
+        with ctrl1:
+            sev_filter = st.multiselect("Filter severity",
+                options=sorted(df_show["severity"].unique()),
+                default=sorted(df_show["severity"].unique()))
+        with ctrl2:
+            carrier_filter = st.multiselect("Filter carrier",
+                options=sorted(df_show["carrier"].unique()),
+                default=sorted(df_show["carrier"].unique()))
+        with ctrl3:
+            rows_n = st.selectbox("Rows", [25, 50, 100, 200, "All"], index=1)
+        df_show = df_show[
+            df_show["severity"].isin(sev_filter) &
+            df_show["carrier"].isin(carrier_filter)
+        ]
+
+    elif "Orders" in dataset_choice:
+        df_show  = orders.copy()
+        col_info = {
+            "order_id":             "SAP Sales Order number (SO-XXXXX)",
+            "shipment_id":          "FK → Shipments. Links order to its carrying shipment",
+            "customer":             "Customer name",
+            "customer_tier":        "A = strategic / penalty-heavy, B = standard, C = basic SLA",
+            "sla_days":             "Contractual delivery SLA in days",
+            "penalty_per_day":      "Daily penalty rate ($) for SLA breach",
+            "sku":                  "SAP material number",
+            "sku_desc":             "Material description",
+            "quantity":             "Order quantity in units",
+            "order_value":          "Total order value ($)",
+            "required_delivery":    "Customer's required delivery date",
+            "is_at_risk":           "True if linked shipment is delayed",
+            "sla_breach_hours":     "Hours by which SLA is breached (0 = within SLA)",
+            "estimated_penalty":    "Estimated financial penalty for this order",
+        }
+        ctrl1, ctrl2, ctrl3 = st.columns([1, 1, 1])
+        with ctrl1:
+            tier_filter = st.multiselect("Customer Tier",
+                options=["A","B","C"], default=["A","B","C"])
+        with ctrl2:
+            status_filter = st.multiselect("Status",
+                options=sorted(df_show["order_status"].unique()),
+                default=sorted(df_show["order_status"].unique()))
+        with ctrl3:
+            rows_n = st.selectbox("Rows", [25, 50, 100, 200, "All"], index=1)
+        df_show = df_show[
+            df_show["customer_tier"].isin(tier_filter) &
+            df_show["order_status"].isin(status_filter)
+        ]
+
+    elif "Inventory" in dataset_choice:
+        df_show  = inventory.copy()
+        col_info = {
+            "sku":           "SAP material number",
+            "description":   "Material description",
+            "category":      "Product category (Mechanical, Electronics, etc.)",
+            "warehouse":     "SAP warehouse / storage location",
+            "current_stock": "Current on-hand quantity",
+            "safety_stock":  "SAP safety stock level (replenishment trigger)",
+            "reorder_point": "Reorder point (MRP trigger)",
+            "unit_cost":     "Standard cost per unit ($)",
+            "lead_time_days":"Replenishment lead time from supplier (days)",
+            "status":        "OK = above safety stock | Low = between safety/reorder | Critical = below safety",
+        }
+        ctrl1, ctrl2, ctrl3 = st.columns([1, 1, 1])
+        with ctrl1:
+            wh_filter = st.multiselect("Warehouse",
+                options=sorted(df_show["warehouse"].unique()),
+                default=sorted(df_show["warehouse"].unique()))
+        with ctrl2:
+            status_filter2 = st.multiselect("Stock Status",
+                options=["OK","Low","Critical"], default=["OK","Low","Critical"])
+        with ctrl3:
+            rows_n = st.selectbox("Rows", [25, 50, 100, 200, "All"], index=1)
+        df_show = df_show[
+            df_show["warehouse"].isin(wh_filter) &
+            df_show["status"].isin(status_filter2)
+        ]
+
+    else:  # Carriers
+        df_show  = carriers.copy()
+        col_info = {
+            "carrier_name":       "Carrier name",
+            "reliability_score":  "Historical on-time delivery rate (0–1). Used in decision scoring.",
+            "avg_delay_hrs":      "Average delay when late (hours). Used to estimate recovery time.",
+            "capacity":           "Capacity tier (high/medium/low). Used for alt-carrier feasibility.",
+            "cost_index":         "Relative cost multiplier vs base rate (1.0 = market rate)",
+            "network_coverage":   "Geographic network coverage score (0–1)",
+            "on_time_2025":       "2025 YTD on-time performance (%)",
+        }
+        rows_n = st.selectbox("Rows", [9, "All"], index=1)
+        df_show = df_show.copy()
+
+    # Show table
+    rows_n_int = len(df_show) if rows_n == "All" else int(rows_n)
+    st.markdown(
+        f'<p style="font-size:11px; color:#6B7280; margin-bottom:6px;">' +
+        f'Showing {min(rows_n_int, len(df_show)):,} of {len(df_show):,} rows</p>',
+        unsafe_allow_html=True,
+    )
+    st.dataframe(df_show.head(rows_n_int).reset_index(drop=True),
+                 use_container_width=True, height=360)
+
+    # Column glossary
+    st.markdown('<p class="ab-label" style="margin-top:16px;">Column Glossary</p>',
+                unsafe_allow_html=True)
+    g1, g2 = st.columns(2)
+    for i, (col, desc) in enumerate(col_info.items()):
+        with (g1 if i % 2 == 0 else g2):
+            st.markdown(f"""
+            <div style='background:#0d1520; border:1px solid #1F2937; border-radius:7px;
+                        padding:9px 13px; margin-bottom:7px;'>
+                <div style='font-family:Space Mono; font-size:10px;
+                            color:#F59E0B; margin-bottom:2px;'>{col}</div>
+                <div style='font-size:11px; color:#9CA3AF;'>{desc}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # Downloads
+    st.markdown('<p class="ab-label" style="margin-top:16px;">Download</p>',
+                unsafe_allow_html=True)
+    d1, d2, d3, d4, _ = st.columns([1,1,1,1,2])
+    datasets_map = {
+        "shipments": shipments, "orders": orders,
+        "inventory": inventory, "carriers": carriers,
+    }
+    for col_btn, (name, df_dl) in zip([d1,d2,d3,d4], datasets_map.items()):
+        with col_btn:
+            st.download_button(
+                f"⬇️ {name.title()}",
+                df_dl.to_csv(index=False).encode(),
+                f"actionbridge_{name}.csv", "text/csv",
+                use_container_width=True,
+            )
+
+    st.markdown("""
+    <div style='font-size:10px; color:#6B7280; margin-top:8px; line-height:1.6;'>
+        💡 Download Shipments as CSV and upload to
+        <b style='color:#F9FAFB;'>Celonis Academic</b> — the columns map directly
+        to Celonis event log format (Case ID = shipment_id, Activity = disruption_type,
+        Timestamp = ship_date / expected_delivery).
+    </div>
+    """, unsafe_allow_html=True)
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# TAB 8 — About & Problem Statement
+# ─────────────────────────────────────────────────────────────────────────────
+with tab8:
+    # ── The Problem ───────────────────────────────────────────────────────────
+    st.markdown('<p class="ab-label">The Problem This App Solves</p>', unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="ab-card-alert">
+        <div class="ab-label">🔴 Executive Statement — The Exact Problem</div>
+        <div style='font-size:20px; font-style:italic; color:#F9FAFB;
+                    line-height:1.5; margin-bottom:10px;'>
+            "AI that doesn't lead to action is just another dashboard."
+        </div>
+        <div style='font-size:12px; color:#9CA3AF;'>
+            — <b style='color:#F9FAFB;'>Jett McCandless</b>, Founder & CEO, project44<br>
+            Source: FreightWaves / project44 Decision Intelligence launch, August 2025
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+    <div class="ab-card">
+        <div class="ab-label">The Situation Before ActionBridge</div>
+        <div style='font-size:13px; color:#F9FAFB; line-height:1.8;'>
+            project44 connects 250,000+ carriers and can see every shipment delay in real time.
+            When a disruption alert fires, a logistics analyst can <b>see</b> the problem instantly.
+            <br><br>
+            But turning that visibility into <b>action</b> still requires:
+        </div>
+        <div style='display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:12px;'>
+    """, unsafe_allow_html=True)
+
+    from utils.data_generator import MANUAL_PROCESS_STEPS
+    for i, (step, desc, mins) in enumerate(MANUAL_PROCESS_STEPS):
+        color = "#EF4444" if mins > 30 else "#F59E0B" if mins > 15 else "#6B7280"
+        st.markdown(f"""
+        <div style='background:#0d1520; border:1px solid #1F2937; border-radius:7px;
+                    padding:9px 13px; margin-bottom:6px;'>
+            <div style='display:flex; justify-content:space-between;'>
+                <span style='font-size:11px; color:#F9FAFB; font-weight:500;'>
+                    {i+1}. {step}</span>
+                <span style='font-family:Space Mono; font-size:11px; color:{color};
+                              font-weight:700;'>{mins}m</span>
+            </div>
+            <div style='font-size:10px; color:#6B7280; margin-top:2px;'>{desc}</div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    total_manual = sum(s[2] for s in MANUAL_PROCESS_STEPS)
+    st.markdown(f"""
+    </div>
+    <div style='background:#EF444415; border:1px solid #EF444430; border-radius:7px;
+                padding:10px 14px; margin-top:10px; font-family:Space Mono; font-size:12px;'>
+        🔴 Total: <b style='color:#EF4444;'>{total_manual} minutes</b> per incident ·
+        4–5 people involved · Decisions made on incomplete, unvalidated data
+    </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+    # ── How It Works ──────────────────────────────────────────────────────────
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown('<p class="ab-label">How ActionBridge Solves It</p>', unsafe_allow_html=True)
+
+    steps = [
+        ("1", "🚨", "Disruption Detected",
+         "project44 fires an exception alert — delayed shipment identified with carrier, origin, delay hours, and disruption type.",
+         "#EF4444"),
+        ("2", "📊", "Impact Assessed Automatically",
+         "ActionBridge queries the linked SAP sales orders, calculates penalty exposure per customer, scores impact by tier (A/B/C), delay severity, and financial risk.",
+         "#F59E0B"),
+        ("3", "🧠", "Response Options Ranked",
+         "The decision engine scores 5 response options (expedite, alt carrier, alt warehouse, reroute, notify) by net benefit = (penalty avoided × success rate) / added cost. Feasibility is validated against live inventory and carrier data.",
+         "#3B82F6"),
+        ("4", "✅", "Decision Validated",
+         "Before outputting a recommendation, ActionBridge runs a validation layer: checks data completeness, confirms feasibility, and compares engine output against a rule-based baseline. Confidence score calculated.",
+         "#8B5CF6"),
+        ("5", "⚙️", "SAP Transactions Generated",
+         "Based on the chosen response, ActionBridge auto-generates draft SAP transactions: VA02 (delivery date change), ME22N (expedite PO), LT01 (transfer order), VT02N (carrier change), and customer notification emails.",
+         "#10B981"),
+        ("6", "💰", "ROI Quantified",
+         "Every decision is tied to a dollar outcome: penalty avoided, freight premium cost, net benefit. 12-month projection calculated from historical incident frequency.",
+         "#10B981"),
+    ]
+
+    for s_num, icon, title, desc, color in steps:
+        st.markdown(f"""
+        <div style='background:#111827; border:1px solid #1F2937;
+                    border-left:3px solid {color};
+                    border-radius:0 10px 10px 0; padding:14px 18px; margin-bottom:10px;
+                    display:flex; gap:16px;'>
+            <div style='font-size:24px; min-width:32px;'>{icon}</div>
+            <div>
+                <div style='font-size:13px; font-weight:600; color:#F9FAFB; margin-bottom:4px;'>
+                    Step {s_num}: {title}</div>
+                <div style='font-size:12px; color:#9CA3AF; line-height:1.6;'>{desc}</div>
+            </div>
+        </div>
+        """, unsafe_allow_html=True)
+
+    # ── What It Proves ────────────────────────────────────────────────────────
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown('<p class="ab-label">What This Project Demonstrates</p>', unsafe_allow_html=True)
+
+    skills = [
+        ("SAP S/4HANA Domain Knowledge",
+         "Transaction codes, movement types, and data structures are real — VA02, ME22N, LT01, VT02N, reason codes ZW01/ZP01 etc. The decision engine knows which SAP action maps to which disruption type.",
+         "#F59E0B"),
+        ("Celonis Process Mining Methodology",
+         "The shipment event log is structured as a Celonis-compatible XES format (Case ID, Activity, Timestamp). The 'manual process steps' analysis mirrors a Celonis process discovery output.",
+         "#F59E0B"),
+        ("Business Analysis & Requirements Design",
+         "The decision engine was designed from a BA perspective — starting with the business problem (penalty exposure, SLA breach), defining KPIs (net benefit, hours saved), and validating against a baseline before recommending.",
+         "#3B82F6"),
+        ("Data Validation Framework",
+         "4-dataset quality checks, FK integrity validation, confidence scoring, and decision validation against rule-based baseline — the kind of data governance work that separates consultants from coders.",
+         "#3B82F6"),
+        ("McKinsey Problem-Solving Structure",
+         "Situation (alert detected) → Complication (230-min manual process) → Resolution (3-min automated decision with quantified ROI). Every screen answers a business question, not a technical one.",
+         "#8B5CF6"),
+        ("AI Integration (Groq / Llama 3.3 70B)",
+         "The AI Analyst Brief uses the structured decision output as context — not raw data. The prompt is designed like a consulting brief, not a chatbot query.",
+         "#8B5CF6"),
+    ]
+
+    s1, s2 = st.columns(2)
+    for i, (title, desc, color) in enumerate(skills):
+        with (s1 if i % 2 == 0 else s2):
+            st.markdown(f"""
+            <div style='background:#111827; border:1px solid #1F2937; border-radius:9px;
+                        padding:14px 16px; margin-bottom:10px;'>
+                <div style='font-size:11px; font-weight:600; color:{color};
+                            margin-bottom:6px;'>{title}</div>
+                <div style='font-size:11px; color:#9CA3AF; line-height:1.6;'>{desc}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # ── Target Companies & CTA ────────────────────────────────────────────────
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown('<p class="ab-label">Companies to Approach With This</p>', unsafe_allow_html=True)
+
+    companies = [
+        ("project44", "Chicago, IL", "Founder/CEO: Jett McCandless",
+         "Built this project directly from his public quote. Hiring Implementation Consultants and Supply Chain Solutions Analysts.",
+         "#F59E0B"),
+        ("GEP Worldwide", "Clark, NJ", "VP: Wayne Clark",
+         "SAP-integrated procurement consulting. Actively hiring new grad analysts. Strong H-1B sponsor.",
+         "#3B82F6"),
+        ("Blue Yonder", "Dallas, TX", "CEO: Duncan Angove",
+         "Supply chain AI platform — SADA Loop mirrors ActionBridge's See/Analyze/Decide/Act structure.",
+         "#8B5CF6"),
+        ("Celonis", "New York, NY", "Co-CEO: Alex Rinke",
+         "Process mining platform this app's methodology is based on. Hiring Customer Success and Implementation roles.",
+         "#10B981"),
+    ]
+
+    co1, co2 = st.columns(2)
+    for i, (company, location, contact, desc, color) in enumerate(companies):
+        with (co1 if i % 2 == 0 else co2):
+            st.markdown(f"""
+            <div style='background:#111827; border:1px solid {color}33;
+                        border-top:2px solid {color}; border-radius:9px;
+                        padding:14px 16px; margin-bottom:10px;'>
+                <div style='font-size:14px; font-weight:700; color:#F9FAFB;'>{company}</div>
+                <div style='font-size:10px; color:{color}; font-family:Space Mono;
+                            margin:3px 0;'>{location} · {contact}</div>
+                <div style='font-size:11px; color:#9CA3AF; line-height:1.5; margin-top:6px;'>{desc}</div>
+            </div>
+            """, unsafe_allow_html=True)
+
+    # Final attribution
+    st.markdown("<br>", unsafe_allow_html=True)
+    st.markdown("""
+    <div style='background:#111827; border:1px solid #1F2937; border-radius:10px;
+                padding:20px 24px; text-align:center;'>
+        <div style='font-size:11px; color:#6B7280; line-height:1.9;'>
+            <b style='color:#F59E0B;'>ActionBridge</b> was built to solve the exact problem
+            Jett McCandless (CEO, project44) publicly described in August 2025:<br>
+            <i style='color:#F9FAFB;'>
+            "AI that doesn't lead to action is just another dashboard."</i>
+            <br><br>
+            Built by <b style='color:#F9FAFB;'>Rutwik Satish</b> ·
+            MS Engineering Management, Northeastern University (May 2026) ·
+            <span style='color:#F59E0B;'>Celonis Process Mining Certified</span> ·
+            SAP S/4HANA · McKinsey Forward
         </div>
     </div>
     """, unsafe_allow_html=True)
