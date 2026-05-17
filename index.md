@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ActionBridge — From Visibility Alert to SAP Transaction Draft</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#08090f;
+  --bg2:#0d1117;
+  --bg3:#111827;
+  --amber:#F59E0B;
+  --amber-dim:#b87a0a;
+  --red:#EF4444;
+  --green:#10B981;
+  --blue:#3B82F6;
+  --border:#1f2937;
+  --text:#f9fafb;
+  --muted:#9ca3af;
+  --dim:#4b5563;
+}
+html{scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;line-height:1.6;overflow-x:hidden}
+
+/* ── NAV ── */
+nav{
+  position:sticky;top:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:.9rem 2.5rem;
+  background:rgba(8,9,15,.88);
+  border-bottom:1px solid var(--border);
+  backdrop-filter:blur(12px);
+}
+.nav-logo{
+  font-family:'Space Mono',monospace;font-size:1.05rem;font-weight:700;
+  color:var(--amber);letter-spacing:-0.5px;
+  display:flex;align-items:center;gap:.5rem;
+}
+.nav-logo span{color:var(--text)}
+.nav-links{display:flex;align-items:center;gap:1.75rem}
+.nav-links a{
+  color:var(--muted);font-size:.875rem;text-decoration:none;
+  transition:color .2s;
+}
+.nav-links a:hover{color:var(--text)}
+.btn{
+  display:inline-flex;align-items:center;gap:.4rem;
+  background:var(--amber);color:#000;
+  font-family:'Space Mono',monospace;font-size:.8rem;font-weight:700;
+  padding:.55rem 1.2rem;border-radius:6px;text-decoration:none;
+  border:none;cursor:pointer;letter-spacing:.02em;
+  transition:background .2s,transform .15s;
+}
+.btn:hover{background:#e08e09;transform:translateY(-1px)}
+.btn-ghost{
+  background:transparent;color:var(--amber);
+  border:1px solid rgba(245,158,11,.35);
+}
+.btn-ghost:hover{background:rgba(245,158,11,.08);color:var(--amber)}
+
+/* ── HERO ── */
+.hero{
+  min-height:88vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  text-align:center;padding:5rem 2rem 4rem;
+  position:relative;overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;inset:0;
+  background:
+    radial-gradient(ellipse 60% 50% at 50% 0%, rgba(245,158,11,.07) 0%, transparent 70%),
+    radial-gradient(ellipse 40% 30% at 80% 80%, rgba(59,130,246,.04) 0%, transparent 60%);
+  pointer-events:none;
+}
+.grid-lines{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(255,255,255,.025) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,.025) 1px, transparent 1px);
+  background-size:60px 60px;
+  mask-image:radial-gradient(ellipse 80% 80% at 50% 50%, black 30%, transparent 100%);
+  pointer-events:none;
+}
+.badge{
+  display:inline-flex;align-items:center;gap:.5rem;
+  background:rgba(245,158,11,.08);
+  border:1px solid rgba(245,158,11,.25);
+  color:var(--amber);
+  font-family:'Space Mono',monospace;font-size:.72rem;font-weight:700;
+  letter-spacing:.1em;text-transform:uppercase;
+  padding:.35rem 1rem;border-radius:20px;
+  margin-bottom:2rem;
+}
+.badge .dot{width:6px;height:6px;border-radius:50%;background:var(--amber);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+h1{
+  font-family:'Syne',sans-serif;
+  font-size:clamp(2.4rem,5.5vw,4.2rem);
+  font-weight:800;line-height:1.08;
+  letter-spacing:-.04em;
+  color:var(--text);
+  margin-bottom:1.2rem;
+  max-width:820px;
+}
+h1 em{font-style:normal;color:var(--amber)}
+
+.hero-sub{
+  font-size:1.05rem;color:var(--muted);
+  max-width:560px;line-height:1.7;margin-bottom:.6rem;
+}
+.quote-block{
+  display:inline-block;
+  background:rgba(245,158,11,.06);
+  border:1px solid rgba(245,158,11,.18);
+  border-left:3px solid var(--amber);
+  border-radius:0 8px 8px 0;
+  padding:.9rem 1.4rem;
+  margin:1.4rem 0 2.2rem;
+  text-align:left;max-width:520px;
+}
+.quote-text{
+  font-size:1rem;font-style:italic;color:var(--text);
+  line-height:1.6;margin-bottom:.4rem;
+}
+.quote-attr{
+  font-family:'Space Mono',monospace;font-size:.7rem;
+  color:var(--dim);letter-spacing:.04em;
+}
+.hero-ctas{display:flex;gap:1rem;flex-wrap:wrap;justify-content:center;margin-bottom:3.5rem}
+.stats-row{
+  display:flex;gap:2.5rem;flex-wrap:wrap;justify-content:center;
+  border-top:1px solid var(--border);
+  padding-top:2.5rem;margin-top:1rem;
+}
+.stat{text-align:center}
+.stat-num{
+  font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;
+  color:var(--amber);line-height:1;display:block;
+}
+.stat-label{font-size:.78rem;color:var(--dim);margin-top:.3rem;
+  font-family:'Space Mono',monospace;letter-spacing:.05em;text-transform:uppercase;}
+
+/* ── SECTION CHROME ── */
+section{padding:5rem 2rem}
+.section-inner{max-width:1100px;margin:0 auto}
+.section-label{
+  font-family:'Space Mono',monospace;font-size:.7rem;font-weight:700;
+  letter-spacing:.15em;text-transform:uppercase;color:var(--amber);
+  margin-bottom:1rem;
+}
+h2{
+  font-family:'Syne',sans-serif;font-size:clamp(1.7rem,3.5vw,2.5rem);
+  font-weight:800;letter-spacing:-.03em;line-height:1.15;
+  margin-bottom:1rem;
+}
+h2 em{font-style:normal;color:var(--amber)}
+.section-desc{color:var(--muted);font-size:1rem;max-width:560px;line-height:1.7;margin-bottom:3rem}
+
+/* ── PROBLEM ── */
+.problem-section{background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.pipeline{
+  display:flex;align-items:stretch;gap:0;
+  background:var(--bg3);border:1px solid var(--border);
+  border-radius:12px;overflow:hidden;margin-bottom:2.5rem;
+}
+.pipe-step{
+  flex:1;padding:1.6rem 1.4rem;
+  border-right:1px solid var(--border);
+  position:relative;
+}
+.pipe-step:last-child{border-right:none}
+.pipe-step.highlight{background:rgba(239,68,68,.05);border-top:2px solid var(--red)}
+.pipe-icon{
+  font-family:'Space Mono',monospace;font-size:.65rem;
+  color:var(--dim);letter-spacing:.08em;text-transform:uppercase;
+  margin-bottom:.6rem;
+}
+.pipe-title{font-size:.95rem;font-weight:600;color:var(--text);margin-bottom:.3rem}
+.pipe-desc{font-size:.82rem;color:var(--muted);line-height:1.5}
+.pipe-time{
+  font-family:'Space Mono',monospace;font-size:1.2rem;font-weight:700;
+  margin-top:.8rem;
+}
+.pipe-time.bad{color:var(--red)}
+.pipe-time.good{color:var(--green)}
+
+.signal-stat{
+  display:grid;grid-template-columns:1fr 1fr;gap:1px;
+  background:var(--border);border:1px solid var(--border);border-radius:10px;overflow:hidden;
+}
+.sig-cell{
+  background:var(--bg3);padding:1.6rem 2rem;
+}
+.sig-num{
+  font-family:'Syne',sans-serif;font-size:2.8rem;font-weight:800;line-height:1;
+  margin-bottom:.4rem;
+}
+.sig-desc{font-size:.88rem;color:var(--muted);line-height:1.5}
+.sig-source{font-family:'Space Mono',monospace;font-size:.65rem;color:var(--dim);margin-top:.5rem}
+
+/* ── HOW IT WORKS ── */
+.steps{display:flex;flex-direction:column;gap:0}
+.step{
+  display:flex;gap:2rem;align-items:flex-start;
+  padding:1.8rem 0;
+  border-bottom:1px solid var(--border);
+  position:relative;
+}
+.step:last-child{border-bottom:none}
+.step-num{
+  font-family:'Syne',sans-serif;font-size:2.5rem;font-weight:800;
+  color:var(--border);line-height:1;min-width:52px;padding-top:.1rem;
+  user-select:none;
+}
+.step-icon{
+  width:44px;height:44px;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.1rem;flex-shrink:0;margin-top:.1rem;
+}
+.step-body h3{font-size:1.05rem;font-weight:600;color:var(--text);margin-bottom:.4rem}
+.step-body p{font-size:.9rem;color:var(--muted);line-height:1.65;max-width:580px}
+.step-tag{
+  display:inline-block;
+  font-family:'Space Mono',monospace;font-size:.65rem;
+  background:rgba(245,158,11,.08);border:1px solid rgba(245,158,11,.2);
+  color:var(--amber);border-radius:4px;padding:.2rem .6rem;
+  margin-top:.6rem;
+}
+
+/* ── WHAT IT PROVES ── */
+.proves-section{background:var(--bg2);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
+.skills-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:1px;
+  background:var(--border);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.skill-card{
+  background:var(--bg3);padding:1.6rem 1.8rem;
+  transition:background .2s;
+}
+.skill-card:hover{background:#161d2a}
+.skill-dot{
+  width:8px;height:8px;border-radius:50%;
+  display:inline-block;margin-right:.5rem;
+}
+.skill-title{
+  font-size:.92rem;font-weight:600;color:var(--text);
+  margin-bottom:.5rem;display:flex;align-items:center;
+}
+.skill-desc{font-size:.82rem;color:var(--muted);line-height:1.6}
+
+/* ── FOOTER ── */
+footer{
+  border-top:1px solid var(--border);
+  padding:3rem 2rem;text-align:center;
+}
+.footer-inner{max-width:700px;margin:0 auto}
+.footer-logo{
+  font-family:'Space Mono',monospace;font-size:1.1rem;font-weight:700;
+  color:var(--amber);margin-bottom:1rem;
+}
+.footer-creds{
+  display:flex;flex-wrap:wrap;justify-content:center;gap:.5rem .75rem;
+  margin-bottom:1.2rem;
+}
+.cred{
+  font-family:'Space Mono',monospace;font-size:.68rem;
+  background:rgba(255,255,255,.04);border:1px solid var(--border);
+  color:var(--muted);border-radius:4px;padding:.25rem .7rem;
+}
+.footer-note{font-size:.78rem;color:var(--dim);line-height:1.6}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
+.hero>*{animation:fadeUp .6s ease both}
+.hero>*:nth-child(1){animation-delay:.05s}
+.hero>*:nth-child(2){animation-delay:.12s}
+.hero>*:nth-child(3){animation-delay:.2s}
+.hero>*:nth-child(4){animation-delay:.27s}
+.hero>*:nth-child(5){animation-delay:.34s}
+.hero>*:nth-child(6){animation-delay:.42s}
+.hero>*:nth-child(7){animation-delay:.5s}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">⚡ <span>Action</span>Bridge</div>
+  <div class="nav-links">
+    <a href="#problem">The Problem</a>
+    <a href="#how">How It Works</a>
+    <a href="#proves">What It Proves</a>
+  </div>
+  <a href="https://rutwiksatish.github.io/portfolio" class="btn">Launch App →</a>
+</nav>
+
+<!-- HERO -->
+<header class="hero">
+  <div class="grid-lines" aria-hidden="true"></div>
+
+  <div class="badge">
+    <span class="dot"></span>
+    Supply Chain · Decision Intelligence · SAP Draft Generator
+  </div>
+
+  <h1>From visibility alert<br>to <em>SAP transaction draft</em><br>in one step.</h1>
+
+  <p class="hero-sub">
+    project44 sees every delay. SAP executes every fix. The gap between them
+    costs 230 minutes of manual work per incident.
+  </p>
+
+  <div class="quote-block">
+    <p class="quote-text">"AI that doesn't lead to action is just another dashboard."</p>
+    <p class="quote-attr">— Jett McCandless, Founder &amp; CEO, project44
+      &nbsp;·&nbsp; PR Newswire, June 12, 2025</p>
+  </div>
+
+  <div class="hero-ctas">
+    <a href="https://rutwiksatish.github.io/portfolio" class="btn">Launch ActionBridge →</a>
+    <a href="#problem" class="btn btn-ghost">See the problem</a>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat">
+      <span class="stat-num">230m</span>
+      <span class="stat-label">Manual process</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num" style="color:var(--green)">3m</span>
+      <span class="stat-label">With ActionBridge</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">5</span>
+      <span class="stat-label">Response options ranked</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">6</span>
+      <span class="stat-label">SAP draft types</span>
+    </div>
+    <div class="stat">
+      <span class="stat-num">4</span>
+      <span class="stat-label">Datasets validated</span>
+    </div>
+  </div>
+</header>
+
+<!-- PROBLEM -->
+<section class="problem-section" id="problem">
+  <div class="section-inner">
+    <p class="section-label">The Problem</p>
+    <h2>Visibility without <em>action</em><br>is just informed paralysis.</h2>
+    <p class="section-desc">
+      project44 connects 250,000+ carriers and detects every shipment delay in real time.
+      The alert fires instantly. Getting from that alert to an executed SAP transaction
+      takes four to five people and most of a working day.
+    </p>
+
+    <div class="pipeline">
+      <div class="pipe-step">
+        <div class="pipe-icon">Step 01</div>
+        <div class="pipe-title">project44 alert fires</div>
+        <div class="pipe-desc">Delay detected. Carrier, origin, delay hours, disruption type — all visible immediately.</div>
+        <div class="pipe-time good">0m</div>
+      </div>
+      <div class="pipe-step highlight">
+        <div class="pipe-icon">Steps 02–10</div>
+        <div class="pipe-title">Manual gap</div>
+        <div class="pipe-desc">Analyst checks SAP. Pulls orders. Identifies affected customers. Calculates penalties. Calls carrier. Decides. Enters data in 4+ t-codes. Notifies customer.</div>
+        <div class="pipe-time bad">230 min</div>
+      </div>
+      <div class="pipe-step">
+        <div class="pipe-icon">Step 11</div>
+        <div class="pipe-title">SAP action executed</div>
+        <div class="pipe-desc">Delivery date updated. Expedite PO raised. Customer notified. Penalty partially avoided.</div>
+        <div class="pipe-time good">Done</div>
+      </div>
+    </div>
+
+    <div class="signal-stat">
+      <div class="sig-cell">
+        <div class="sig-num" style="color:var(--red)">2%</div>
+        <div class="sig-desc">Signal-to-action ratio in the industry. Teams are informed. They are not moving.</div>
+        <div class="sig-source">FreightWaves / project44 Decision44 event, April 2026</div>
+      </div>
+      <div class="sig-cell">
+        <div class="sig-num" style="color:var(--amber)">98%</div>
+        <div class="sig-desc">Of alerts result in manual handoffs, incomplete data, delayed decisions, and avoidable penalties.</div>
+        <div class="sig-source">Illustrative benchmark — based on typical exception management workflows</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section id="how">
+  <div class="section-inner">
+    <p class="section-label">How It Works</p>
+    <h2>Six steps.<br><em>Three minutes.</em></h2>
+    <p class="section-desc">
+      ActionBridge takes a disruption alert and produces operator-ready SAP transaction drafts
+      through a structured decision pipeline — no manual data gathering required.
+    </p>
+
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">01</div>
+        <div class="step-icon" style="background:rgba(239,68,68,.1);color:var(--red)">🚨</div>
+        <div class="step-body">
+          <h3>Disruption detected</h3>
+          <p>A project44 exception alert fires — delayed shipment identified with carrier, delay hours, origin warehouse, and disruption type.</p>
+          <span class="step-tag">project44 event stream</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">02</div>
+        <div class="step-icon" style="background:rgba(245,158,11,.1);color:var(--amber)">📊</div>
+        <div class="step-body">
+          <h3>Impact assessed automatically</h3>
+          <p>ActionBridge queries linked SAP sales orders, calculates penalty exposure per customer tier (A/B/C), and scores total impact 0–100.</p>
+          <span class="step-tag">SAP SO data · SLA breach calculation</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">03</div>
+        <div class="step-icon" style="background:rgba(59,130,246,.1);color:var(--blue)">🧠</div>
+        <div class="step-body">
+          <h3>Response options ranked</h3>
+          <p>Five options scored by net benefit = (penalty avoided × success rate) / added cost. Feasibility validated against live inventory and carrier reliability data.</p>
+          <span class="step-tag">Decision engine · carrier reliability index</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">04</div>
+        <div class="step-icon" style="background:rgba(139,92,246,.1);color:#8B5CF6">✅</div>
+        <div class="step-body">
+          <h3>Decision validated</h3>
+          <p>Data completeness checked. Feasibility confirmed. Engine output compared against rule-based baseline. Confidence score generated before any recommendation is surfaced.</p>
+          <span class="step-tag">4-dataset quality check · confidence scoring</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">05</div>
+        <div class="step-icon" style="background:rgba(16,185,129,.1);color:var(--green)">⚙️</div>
+        <div class="step-body">
+          <h3>SAP transaction drafts generated</h3>
+          <p>Pre-filled drafts for VA02 (delivery date change), ME22N (expedite PO), LT01 (transfer order), VT02N (carrier change), and customer notification templates. A human operator reviews and executes.</p>
+          <span class="step-tag">VA02 · ME22N · LT01 · VT02N</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">06</div>
+        <div class="step-icon" style="background:rgba(16,185,129,.1);color:var(--green)">💰</div>
+        <div class="step-body">
+          <h3>ROI quantified</h3>
+          <p>Every decision tied to a dollar outcome: penalty avoided, freight premium cost, net benefit. 12-month annualised projection calculated from incident frequency.</p>
+          <span class="step-tag">Net benefit model · annual business case</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- WHAT IT PROVES -->
+<section class="proves-section" id="proves">
+  <div class="section-inner">
+    <p class="section-label">What It Demonstrates</p>
+    <h2>Not a dashboard.<br><em>A decision.</em></h2>
+    <p class="section-desc">
+      ActionBridge was built to demonstrate a specific thesis about the gap between
+      supply chain visibility and operational action.
+    </p>
+
+    <div class="skills-grid">
+      <div class="skill-card">
+        <div class="skill-title">
+          <span class="skill-dot" style="background:var(--amber)"></span>
+          SAP S/4HANA domain knowledge
+        </div>
+        <div class="skill-desc">Transaction codes, movement types, and data structures are real — VA02, ME22N, LT01, VT02N. The decision engine maps each disruption type to the correct SAP action category. Z-prefix codes are examples of client-specific configurations.</div>
+      </div>
+      <div class="skill-card">
+        <div class="skill-title">
+          <span class="skill-dot" style="background:var(--amber)"></span>
+          Process mining fundamentals
+        </div>
+        <div class="skill-desc">Celonis Academy: Academic Process Mining Fundamentals (Apr 2026 · Credly verified). The shipment event log is structured to support process mining analysis — expandable to a multi-activity event log for Celonis import.</div>
+      </div>
+      <div class="skill-card">
+        <div class="skill-title">
+          <span class="skill-dot" style="background:var(--blue)"></span>
+          Business analysis & requirements design
+        </div>
+        <div class="skill-desc">Decision engine designed from a BA perspective — starting with the business problem, defining KPIs (net benefit, hours saved), validating against a rule-based baseline before surfacing recommendations.</div>
+      </div>
+      <div class="skill-card">
+        <div class="skill-title">
+          <span class="skill-dot" style="background:var(--blue)"></span>
+          Data validation framework
+        </div>
+        <div class="skill-desc">4-dataset quality checks, FK integrity validation, confidence scoring, and decision validation against a rule-based baseline. Every recommendation has a documented confidence level.</div>
+      </div>
+      <div class="skill-card">
+        <div class="skill-title">
+          <span class="skill-dot" style="background:#8B5CF6"></span>
+          McKinsey problem-solving structure
+        </div>
+        <div class="skill-desc">Situation (alert detected) → Complication (multi-step manual process) → Resolution (structured decision with quantified ROI). Every screen answers a business question, not a technical one.</div>
+      </div>
+      <div class="skill-card">
+        <div class="skill-title">
+          <span class="skill-dot" style="background:#8B5CF6"></span>
+          AI integration (Groq / Llama 3.3 70B)
+        </div>
+        <div class="skill-desc">AI Analyst Brief uses structured decision output as prompt context — not raw data. Generates a 3-paragraph operations brief: what happened, why the recommendation is right, what process change prevents recurrence.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA STRIP -->
+<section style="padding:4rem 2rem;text-align:center;background:var(--bg);border-top:1px solid var(--border)">
+  <div style="max-width:580px;margin:0 auto">
+    <p style="font-family:'Space Mono',monospace;font-size:.7rem;letter-spacing:.12em;text-transform:uppercase;color:var(--amber);margin-bottom:1rem">Ready to explore</p>
+    <h2 style="font-family:'Syne',sans-serif;font-size:2rem;font-weight:800;letter-spacing:-.03em;margin-bottom:.8rem">
+      See the decision engine live.
+    </h2>
+    <p style="color:var(--muted);font-size:.95rem;margin-bottom:2rem;line-height:1.6">
+      Pick any delayed shipment, run the impact analysis, view ranked response options,
+      and download the SAP transaction drafts.
+    </p>
+    <a href="https://rutwiksatish.github.io/portfolio" class="btn" style="font-size:.9rem;padding:.7rem 2rem">
+      Launch ActionBridge →
+    </a>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-inner">
+    <div class="footer-logo">⚡ ActionBridge</div>
+    <div class="footer-creds">
+      <span class="cred">MS Engineering Management · Northeastern University · May 2026</span>
+      <span class="cred">SAP S/4HANA</span>
+      <span class="cred">Celonis Academy: PM Fundamentals · Apr 2026</span>
+      <span class="cred">McKinsey Forward</span>
+      <span class="cred">STEM OPT · 36 months</span>
+    </div>
+    <p class="footer-note">
+      Built by <strong style="color:var(--text)">Rutwik Satish</strong> ·
+      Inspired by Jett McCandless, CEO project44 ·
+      <em>"AI that doesn't lead to action is just another dashboard."</em>
+      <br>
+      All data synthetically generated · SAP transactions are drafts only · No live ERP connection
+    </p>
+  </div>
+</footer>
+
+</body>
+</html>
